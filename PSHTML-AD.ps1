@@ -1,45 +1,29 @@
 <#
 .SYNOPSIS
     Generate graphed report for all Active Directory objects.
-
 .DESCRIPTION
     Generate graphed report for all Active Directory objects.
-
 .PARAMETER CompanyLogo
     Enter URL or UNC path to your desired Company Logo for generated report.
-
     -CompanyLogo "\\Server01\Admin\Files\CompanyLogo.png"
-
 .PARAMETER RightLogo
     Enter URL or UNC path to your desired right-side logo for generated report.
-
     -RightLogo "https://www.psmpartners.com/wp-content/uploads/2017/10/porcaro-stolarek-mete.png"
-
 .PARAMETER ReportTitle
     Enter desired title for generated report.
-
     -ReportTitle "Active Directory Report"
-
 .PARAMETER Days
     Users that have not logged in [X] amount of days or more.
-
     -Days "30"
-
 .PARAMETER UserCreatedDays
     Users that have been created within [X] amount of days.
-
     -UserCreatedDays "7"
-
 .PARAMETER DaysUntilPWExpireINT
     Users password expires within [X] amount of days
-
     -DaysUntilPWExpireINT "7"
-
 .PARAMETER ADModNumber
     Active Directory Objects that have been modified within [X] amount of days.
-
     -ADModNumber "3"
-
 .NOTES
     Version: 1.0.3
     Author: Bradley Wyatt
@@ -47,6 +31,7 @@
     Modified: JBear 12/5/2018
     Bradley Wyatt 12/8/2018
     jporgand 12/6/2018
+    Eric Chicot 12/05/2019
 #>
 
 param (
@@ -57,7 +42,7 @@ param (
 	#Logo that will be on the right side, UNC or URL
 
 	[Parameter(ValueFromPipeline = $true, HelpMessage = "Enter URL or UNC path for Side Logo")]
-	[String]$RightLogo = "https://www.psmpartners.com/wp-content/uploads/2017/10/porcaro-stolarek-mete.png",
+	[String]$RightLogo = "",
 	#Title of generated report
 
 	[Parameter(ValueFromPipeline = $true, HelpMessage = "Enter desired title for report")]
@@ -65,7 +50,7 @@ param (
 	#Location the report will be saved to
 
 	[Parameter(ValueFromPipeline = $true, HelpMessage = "Enter desired directory path to save; Default: C:\Automation\")]
-	[String]$ReportSavePath = "C:\Automation\",
+	[String]$ReportSavePath = "C:\Users\Administrateur\Desktop",
 	#Find users that have not logged in X Amount of days, this sets the days
 
 	[Parameter(ValueFromPipeline = $true, HelpMessage = "Users that have not logged on in more than [X] days. amount of days; Default: 30")]
@@ -131,58 +116,110 @@ If ($null -eq $Mod)
 }
 
 #Array of default Security Groups
+
+$DomainSID = ((Get-ADDomain).domainsid).value
 $DefaultSGs = @(
 	
-	"Access Control Assistance Operators"
-	"Account Operators"
-	"Administrators"
-	"Allowed RODC Password Replication Group"
-	"Backup Operators"
-	"Certificate Service DCOM Access"
-	"Cert Publishers"
-	"Cloneable Domain Controllers"
-	"Cryptographic Operators"
-	"Denied RODC Password Replication Group"
-	"Distributed COM Users"
-	"DnsUpdateProxy"
-	"DnsAdmins"
-	"Domain Admins"
-	"Domain Computers"
-	"Domain Controllers"
-	"Domain Guests"
-	"Domain Users"
-	"Enterprise Admins"
-	"Enterprise Key Admins"
-	"Enterprise Read-only Domain Controllers"
-	"Event Log Readers"
-	"Group Policy Creator Owners"
-	"Guests"
-	"Hyper-V Administrators"
-	"IIS_IUSRS"
-	"Incoming Forest Trust Builders"
-	"Key Admins"
-	"Network Configuration Operators"
-	"Performance Log Users"
-	"Performance Monitor Users"
-	"Print Operators"
-	"Pre-Windows 2000 Compatible Access"
-	"Protected Users"
-	"RAS and IAS Servers"
-	"RDS Endpoint Servers"
-	"RDS Management Servers"
-	"RDS Remote Access Servers"
-	"Read-only Domain Controllers"
-	"Remote Desktop Users"
-	"Remote Management Users"
-	"Replicator"
-	"Schema Admins"
-	"Server Operators"
-	"Storage Replica Administrators"
-	"System Managed Accounts Group"
-	"Terminal Server License Servers"
-	"Users"
-	"Windows Authorization Access Group"
-	"WinRMRemoteWMIUsers"
+	#"Access Control Assistance Operators"
+    "S-1-5-32-579"
+	#"Account Operators"
+    "S-1-5-32-548"
+	#"Administrators"
+    "S-1-5-32-544"
+	#"Allowed RODC Password Replication Group"
+    $DomainSID + "-571"
+	#"Backup Operators"
+    "S-1-5-32-551"
+	#"Certificate Service DCOM Access"
+    $DomainSID + "-574"
+	#"Cert Publishers"
+    $DomainSID + "-517"
+	#"Cloneable Domain Controllers"
+    $DomainSID + "-522"
+	#"Cryptographic Operators"
+    "S-1-5-32-569"
+	#"Denied RODC Password Replication Group"
+    $DomainSID + "-572"
+    #"Device Owners"
+    "S-1-5-32-583"
+	#"Distributed COM Users"
+    "S-1-5-32-562"
+	#"DnsUpdateProxy"
+    $DomainSID + "-1103"
+	#"DnsAdmins"
+    $DomainSID + "-1102"
+	#"Domain Admins"
+    $DomainSID + "-512"
+	#"Domain Computers"
+    $DomainSID + "-515"
+	#"Domain Controllers"
+    $DomainSID + "-516"
+	#"Domain Guests"
+    $DomainSID + "-514"
+	#"Domain Users"
+    $DomainSID + "-513"
+	#"Enterprise Admins"
+    $DomainSID + "-519"
+	#"Enterprise Key Admins"
+    $DomainSID + "-527"
+	#"Enterprise Read-only Domain Controllers"
+    $DomainSID + "-498"
+	#"Event Log Readers"
+    "S-1-5-32-573"
+	#"Group Policy Creator Owners"
+    $DomainSID + "-520"
+	#"Guests"
+    "S-1-5-32-546"
+	#"Hyper-V Administrators"
+    "S-1-5-32-578"
+	#"IIS_IUSRS"
+    "S-1-5-32-568"
+	#"Incoming Forest Trust Builders"
+    "S-1-5-32-557"
+	#"Key Admins"
+    $DomainSID + "-526"
+	#"Network Configuration Operators"
+    "S-1-5-32-556"
+	#"Performance Log Users"
+    "S-1-5-32-559"
+	#"Performance Monitor Users"
+    "S-1-5-32-558"
+    #"Pre–Windows 2000 Compatible Access"
+    "S-1-5-32-554"
+    #"Print Operators"
+    "S-1-5-32-550"
+	#"Protected Users"
+    $DomainSID + "-525"
+	#"RAS and IAS Servers" & "RDS Endpoint Servers"
+    $DomainSID + "-553"
+	#"RDS Management Servers"
+    "S-1-5-32-577"
+	#"RDS Remote Access Servers"
+    "S-1-5-32-575"
+	#"Remote Desktop Users"
+    "S-1-5-32-555"
+	#"Read-only Domain Controllers"
+    $DomainSID + "-521"
+	#"Remote Management Users"
+    "S-1-5-32-580"
+	#"Replicator"
+    "S-1-5-32-552"
+	#"Schema Admins"
+    $DomainSID + "-518"
+	#"Server Operators"
+    "S-1-5-32-549"
+	#"Storage Replica Administrators"
+    "S-1-5-32-582"
+	#"System Managed Accounts Group"
+    "S-1-5-32-581"
+	#"Terminal Server License Servers"
+    "S-1-5-32-561"
+	#"Users"
+    "S-1-5-32-545"
+	#"Windows Authorization Access Group"
+    "S-1-5-32-560"
+	#"WinRMRemoteWMIUsers"
+    $DomainSID + "-1000"
 )
 
 $Table = New-Object 'System.Collections.Generic.List[System.Object]'
@@ -346,7 +383,7 @@ if (($NewCreatedUsersTable).Count -eq 0)
 
 
 #Get Domain Admins
-$DomainAdminMembers = Get-ADGroupMember "Domain Admins"
+$DomainAdminMembers = Get-ADGroupMember $DefaultSGs[2]
 
 foreach ($DomainAdminMember in $DomainAdminMembers)
 {
@@ -377,7 +414,8 @@ if (($DomainAdminTable).Count -eq 0)
 
 
 #Get Enterprise Admins
-$EnterpriseAdminsMembers = Get-ADGroupMember "Enterprise Admins" -Server $SchemaMaster
+#$objSID = (((Get-ADDomain).domainsid).value) + "-519"
+$EnterpriseAdminsMembers = Get-ADGroup $DefaultSGs[19] -Server $SchemaMaster
 
 foreach ($EnterpriseAdminsMember in $EnterpriseAdminsMembers)
 {
@@ -550,9 +588,7 @@ if (($DomainTable).Count -eq 0)
 Write-Host "Done!" -ForegroundColor White
 
 <###########################
-
 		   Groups
-
 ############################>
 
 Write-Host "Working on Groups Report..." -ForegroundColor Green
@@ -599,7 +635,8 @@ foreach ($Group in $Groups)
 		$GroupsNotProtected++
 	}
 	
-	if ($DefaultSGs -contains $Group.Name)
+	#if ($DefaultSGs -contains $Group.Name)
+	if ($DefaultSGs -contains $Group.SID)
 	{
 		
 		$DefaultADGroup = "True"
@@ -780,9 +817,7 @@ $GroupMembershipTable.Add($objmem)
 Write-Host "Done!" -ForegroundColor White
 
 <###########################
-
     Organizational Units
-
 ############################>
 
 Write-Host "Working on Organizational Units Report..." -ForegroundColor Green
@@ -892,9 +927,7 @@ $OUProtectionTable.Add($obj2)
 Write-Host "Done!" -ForegroundColor White
 
 <###########################
-
            USERS
-
 ############################>
 
 Write-Host "Working on Users Report..." -ForegroundColor Green
@@ -1169,9 +1202,7 @@ Else
 
 Write-Host "Done!" -ForegroundColor White
 <###########################
-
 	   Group Policy
-
 ############################>
 Write-Host "Working on Group Policy Report..." -ForegroundColor Green
 
@@ -1202,9 +1233,7 @@ if (($GPOTable).Count -eq 0)
 }
 Write-Host "Done!" -ForegroundColor White
 <###########################
-
 	   Computers
-
 ############################>
 Write-Host "Working on Computers Report..." -ForegroundColor Green
 
