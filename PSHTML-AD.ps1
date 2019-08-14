@@ -31,13 +31,11 @@
     Modified: JBear 12/5/2018
     Bradley Wyatt 12/8/2018
     jporgand 12/6/2018
-    Fork Author : Eric Chicot 
-    Fork Date : 28/07/2019
-    Fork Modified : Eric Chicot 28/07/2019
+    Eric Chicot 28/07/2019
 #>
 
 param (
-	
+
 	#Company logo that will be displayed on the left, can be URL or UNC
 	[Parameter(ValueFromPipeline = $true, HelpMessage = "Enter URL or UNC path to Company Logo")]
 	[String]$CompanyLogo = "",
@@ -51,8 +49,8 @@ param (
 	[String]$ReportTitle = "Active Directory Report",
 	#Location the report will be saved to
 
-	[Parameter(ValueFromPipeline = $true, HelpMessage = "Enter desired directory path to save; Default: C:\Automation\")]
-	[String]$ReportSavePath = "C:\Users\Administrateur\Desktop",
+	[Parameter(ValueFromPipeline = $true, HelpMessage = "Enter desired directory path to save; Default: C:\temp\")]
+	[String]$ReportSavePath = "C:\temp",
 	#Find users that have not logged in X Amount of days, this sets the days
 
 	[Parameter(ValueFromPipeline = $true, HelpMessage = "Users that have not logged on in more than [X] days. amount of days; Default: 30")]
@@ -69,7 +67,7 @@ param (
 
 	[Parameter(ValueFromPipeline = $true, HelpMessage = "AD Objects that have been modified within [X] amount of days; Default: 3")]
 	$ADModNumber = 3
-	
+
 	#CSS template located C:\Program Files\WindowsPowerShell\Modules\ReportHTML\1.4.1.1\
 	#Default template is orange and named "Sample"
 )
@@ -88,21 +86,21 @@ Write-Host "__________________________________" -ForegroundColor White
 
 function LastLogonConvert ($ftDate)
 {
-	
+
 	$Date = [DateTime]::FromFileTime($ftDate)
-	
+
 	if ($Date -lt (Get-Date '1/1/1900') -or $date -eq 0 -or $date -eq $null)
 	{
-		
+
 		"Never"
 	}
-	
+
 	else
 	{
-		
+
 		$Date
 	}
-	
+
 } #End function LastLogonConvert
 
 #Check for ReportHTML Module
@@ -110,9 +108,9 @@ $Mod = Get-Module -ListAvailable -Name "ReportHTML"
 
 If ($null -eq $Mod)
 {
-	
+
 	Write-Host "ReportHTML Module is not present, attempting to install it"
-	
+
 	Install-Module -Name ReportHTML -Force
 	Import-Module ReportHTML -ErrorAction SilentlyContinue
 }
@@ -121,7 +119,7 @@ If ($null -eq $Mod)
 
 $DomainSID = ((Get-ADDomain).domainsid).value
 $DefaultSGs = @(
-	
+
 	#"Access Control Assistance Operators"
     "S-1-5-32-579"
 	#"Account Operators"
@@ -274,36 +272,36 @@ $ADObjs = Get-ADObject -Filter { whenchanged -gt $dte -and ObjectClass -ne "doma
 
 foreach ($ADObj in $ADObjs)
 {
-	
+
 	if ($ADObj.ObjectClass -eq "GroupPolicyContainer")
 	{
-		
+
 		$Name = $ADObj.DisplayName
 	}
-	
+
 	else
 	{
-		
+
 		$Name = $ADObj.Name
 	}
-	
+
 	$obj = [PSCustomObject]@{
-		
+
 		'Name'	      = $Name
 		'Object Type' = $ADObj.ObjectClass
 		'When Changed' = $ADObj.WhenChanged
 	}
-	
+
 	$ADObjectTable.Add($obj)
 }
 if (($ADObjectTable).Count -eq 0)
 {
-	
+
 	$Obj = [PSCustomObject]@{
-		
+
 		Information = 'Information: No AD Objects have been modified recently'
 	}
-	
+
 	$ADObjectTable.Add($obj)
 }
 
@@ -312,13 +310,13 @@ $ADRecycleBinStatus = (Get-ADOptionalFeature -Filter 'name -like "Recycle Bin Fe
 
 if ($ADRecycleBinStatus.Count -lt 1)
 {
-	
+
 	$ADRecycleBin = "Disabled"
 }
 
 else
 {
-	
+
 	$ADRecycleBin = "Enabled"
 }
 
@@ -334,7 +332,7 @@ $DomainNamingMaster = $ForestObj.DomainNamingMaster
 $SchemaMaster = $ForestObj.SchemaMaster
 
 $obj = [PSCustomObject]@{
-	
+
 	'Domain'			    = $Forest
 	'AD Recycle Bin'	    = $ADRecycleBin
 	'Infrastructure Master' = $InfrastructureMaster
@@ -348,9 +346,9 @@ $CompanyInfoTable.Add($obj)
 
 if (($CompanyInfoTable).Count -eq 0)
 {
-	
+
 	$Obj = [PSCustomObject]@{
-		
+
 		Information = 'Information: Could not get items for table'
 	}
 	$CompanyInfoTable.Add($obj)
@@ -362,21 +360,21 @@ $NewUsers = $AllUsers | Where-Object { $_.whenCreated -ge $When }
 
 foreach ($Newuser in $Newusers)
 {
-	
+
 	$obj = [PSCustomObject]@{
-		
+
 		'Name' = $Newuser.Name
 		'Enabled' = $Newuser.Enabled
 		'Creation Date' = $Newuser.whenCreated
 	}
-	
+
 	$NewCreatedUsersTable.Add($obj)
 }
 if (($NewCreatedUsersTable).Count -eq 0)
 {
-	
+
 	$Obj = [PSCustomObject]@{
-		
+
 		Information = 'Information: No new users have been recently created'
 	}
 	$NewCreatedUsersTable.Add($obj)
@@ -389,26 +387,26 @@ $DomainAdminMembers = Get-ADGroupMember $DefaultSGs[2]
 
 foreach ($DomainAdminMember in $DomainAdminMembers)
 {
-	
+
 	$Name = $DomainAdminMember.Name
 	$Type = $DomainAdminMember.ObjectClass
 	$Enabled = ($AllUsers | Where-Object { $_.Name -eq $Name }).Enabled
-	
+
 	$obj = [PSCustomObject]@{
-		
+
 		'Name'    = $Name
 		'Enabled' = $Enabled
 		'Type'    = $Type
 	}
-	
+
 	$DomainAdminTable.Add($obj)
 }
 
 if (($DomainAdminTable).Count -eq 0)
 {
-	
+
 	$Obj = [PSCustomObject]@{
-		
+
 		Information = 'Information: No Domain Admin Members were found'
 	}
 	$DomainAdminTable.Add($obj)
@@ -416,31 +414,30 @@ if (($DomainAdminTable).Count -eq 0)
 
 
 #Get Enterprise Admins
-#$objSID = (((Get-ADDomain).domainsid).value) + "-519"
 $EnterpriseAdminsMembers = Get-ADGroup $DefaultSGs[19] -Server $SchemaMaster
 
 foreach ($EnterpriseAdminsMember in $EnterpriseAdminsMembers)
 {
-	
+
 	$Name = $EnterpriseAdminsMember.Name
 	$Type = $EnterpriseAdminsMember.ObjectClass
 	$Enabled = ($AllUsers | Where-Object { $_.Name -eq $Name }).Enabled
-	
+
 	$obj = [PSCustomObject]@{
-		
+
 		'Name'    = $Name
 		'Enabled' = $Enabled
 		'Type'    = $Type
 	}
-	
+
 	$EnterpriseAdminTable.Add($obj)
 }
 
 if (($EnterpriseAdminTable).Count -eq 0)
 {
-	
+
 	$Obj = [PSCustomObject]@{
-		
+
 		Information = 'Information: Enterprise Admin members were found'
 	}
 	$EnterpriseAdminTable.Add($obj)
@@ -451,9 +448,9 @@ $DefaultComputers = Get-ADComputer -Filter * -Properties * -SearchBase "$Default
 
 foreach ($DefaultComputer in $DefaultComputers)
 {
-	
+
 	$obj = [PSCustomObject]@{
-		
+
 		'Name' = $DefaultComputer.Name
 		'Enabled' = $DefaultComputer.Enabled
 		'Operating System' = $DefaultComputer.OperatingSystem
@@ -461,15 +458,15 @@ foreach ($DefaultComputer in $DefaultComputers)
 		'Password Last Set' = $DefaultComputer.PasswordLastSet
 		'Protect from Deletion' = $DefaultComputer.ProtectedFromAccidentalDeletion
 	}
-	
+
 	$DefaultComputersinDefaultOUTable.Add($obj)
 }
 
 if (($DefaultComputersinDefaultOUTable).Count -eq 0)
 {
-	
+
 	$Obj = [PSCustomObject]@{
-		
+
 		Information = 'Information: No computers were found in the Default OU'
 	}
 	$DefaultComputersinDefaultOUTable.Add($obj)
@@ -480,9 +477,9 @@ $DefaultUsers = $Allusers | Where-Object { $_.DistinguishedName -like "*$($Defau
 
 foreach ($DefaultUser in $DefaultUsers)
 {
-	
+
 	$obj = [PSCustomObject]@{
-		
+
 		'Name' = $DefaultUser.Name
 		'UserPrincipalName' = $DefaultUser.UserPrincipalName
 		'Enabled' = $DefaultUser.Enabled
@@ -490,14 +487,14 @@ foreach ($DefaultUser in $DefaultUsers)
 		'Last Logon' = $DefaultUser.LastLogon
 		'Email Address' = $DefaultUser.EmailAddress
 	}
-	
+
 	$DefaultUsersinDefaultOUTable.Add($obj)
 }
 if (($DefaultUsersinDefaultOUTable).Count -eq 0)
 {
-	
+
 	$Obj = [PSCustomObject]@{
-		
+
 		Information = 'Information: No Users were found in the default OU'
 	}
 	$DefaultUsersinDefaultOUTable.Add($obj)
@@ -509,28 +506,28 @@ $LooseUsers = Search-ADAccount -AccountExpiring -UsersOnly
 
 foreach ($LooseUser in $LooseUsers)
 {
-	
+
 	$NameLoose = $LooseUser.Name
 	$UPNLoose = $LooseUser.UserPrincipalName
 	$ExpirationDate = $LooseUser.AccountExpirationDate
 	$enabled = $LooseUser.Enabled
-	
+
 	$obj = [PSCustomObject]@{
-		
+
 		'Name'			    = $NameLoose
 		'UserPrincipalName' = $UPNLoose
 		'Expiration Date'   = $ExpirationDate
 		'Enabled'		    = $enabled
 	}
-	
+
 	$ExpiringAccountsTable.Add($obj)
 }
 
 if (($ExpiringAccountsTable).Count -eq 0)
 {
-	
+
 	$Obj = [PSCustomObject]@{
-		
+
 		Information = 'Information: No Users were found to expire soon'
 	}
 	$ExpiringAccountsTable.Add($obj)
@@ -541,26 +538,26 @@ $SecurityLogs = Get-EventLog -Newest 7 -LogName "Security" | Where-Object { $_.M
 
 foreach ($SecurityLog in $SecurityLogs)
 {
-	
+
 	$TimeGenerated = $SecurityLog.TimeGenerated
 	$EntryType = $SecurityLog.EntryType
 	$Recipient = $SecurityLog.Message
-	
+
 	$obj = [PSCustomObject]@{
-		
+
 		'Time'    = $TimeGenerated
 		'Type'    = $EntryType
 		'Message' = $Recipient
 	}
-	
+
 	$SecurityEventTable.Add($obj)
 }
 
 if (($SecurityEventTable).Count -eq 0)
 {
-	
+
 	$Obj = [PSCustomObject]@{
-		
+
 		Information = 'Information: No logon security events were found'
 	}
 	$SecurityEventTable.Add($obj)
@@ -568,20 +565,20 @@ if (($SecurityEventTable).Count -eq 0)
 
 #Tenant Domain
 $Domains = Get-ADForest | Select-Object -ExpandProperty upnsuffixes | ForEach-Object{
-	
+
 	$obj = [PSCustomObject]@{
-		
+
 		'UPN Suffixes' = $_
 		Valid		   = "True"
 	}
-	
+
 	$DomainTable.Add($obj)
 }
 if (($DomainTable).Count -eq 0)
 {
-	
+
 	$Obj = [PSCustomObject]@{
-		
+
 		Information = 'Information: No UPN Suffixes were found'
 	}
 	$DomainTable.Add($obj)
@@ -608,92 +605,91 @@ $GroupsNotProtected = 0
 
 foreach ($Group in $Groups)
 {
-	
+
 	$DefaultADGroup = 'False'
 	$Type = New-Object 'System.Collections.Generic.List[System.Object]'
 	$Gemail = (Get-ADGroup $Group -Properties mail).mail
-	
+
 	if (($group.GroupCategory -eq "Security") -and ($Gemail -ne $Null))
 	{
-		
+
 		$MailSecurityCount++
 	}
-	
+
 	if (($group.GroupCategory -eq "Security") -and (($Gemail) -eq $Null))
 	{
-		
+
 		$SecurityCount++
 	}
-	
+
 	if ($Group.ProtectedFromAccidentalDeletion -eq $True)
 	{
-		
+
 		$GroupsProtected++
 	}
-	
+
 	else
 	{
-		
+
 		$GroupsNotProtected++
 	}
-	
-	#if ($DefaultSGs -contains $Group.Name)
+
 	if ($DefaultSGs -contains $Group.SID)
 	{
-		
+
 		$DefaultADGroup = "True"
 		$DefaultGroup++
 	}
-	
+
 	else
 	{
-		
+
 		$CustomGroup++
 	}
-	
+
 	if ($group.GroupCategory -eq "Distribution")
 	{
-		
+
 		$Type = "Distribution Group"
 	}
-	
+
 	if (($group.GroupCategory -eq "Security") -and (($Gemail) -eq $Null))
 	{
-		
+
 		$Type = "Security Group"
 	}
-	
+
 	if (($group.GroupCategory -eq "Security") -and (($Gemail) -ne $Null))
 	{
-		
+
 		$Type = "Mail-Enabled Security Group"
 	}
-	
+
 	if ($Group.Name -ne "Domain Users")
 	{
-		
+
 		$Users = (Get-ADGroupMember -Identity $Group | Sort-Object DisplayName | Select-Object -ExpandProperty Name) -join ", "
-		
+
 		if (!($Users))
 		{
-			
+
 			$Groupswithnomembership++
 		}
-		
+
 		else
 		{
-			
+
 			$Groupswithmemebrship++
-			
+
 		}
 	}
-	
+
 	else
 	{
-		
+
 		$Users = "Skipped Domain Users Membership"
 	}
-	
+
 	$OwnerDN = Get-ADGroup -Filter { name -eq $Group.Name } -Properties managedBy | Select-Object -ExpandProperty ManagedBy
 	Try
 	{
@@ -703,11 +699,11 @@ foreach ($Group in $Groups)
 	{
 		write-host -ForegroundColor Yellow "Cannot resolve the manager, " $Manager " on the group " $group.name
 	}
-	
+
 	#$Manager = $AllUsers | Where-Object { $_.distinguishedname -eq $OwnerDN } | Select-Object -ExpandProperty Name
-	
+
 	$obj = [PSCustomObject]@{
-		
+
 		'Name' = $Group.name
 		'Type' = $Type
 		'Members' = $users
@@ -716,22 +712,22 @@ foreach ($Group in $Groups)
 		'Protected from Deletion' = $Group.ProtectedFromAccidentalDeletion
 		'Default AD Group' = $DefaultADGroup
 	}
-	
+
 	$table.Add($obj)
 }
 
 if (($table).Count -eq 0)
 {
-	
+
 	$Obj = [PSCustomObject]@{
-		
+
 		Information = 'Information: No Groups were found'
 	}
 	$table.Add($obj)
 }
 #TOP groups table
 $obj1 = [PSCustomObject]@{
-	
+
 	'Total Groups' = $Groups.Count
 	'Mail-Enabled Security Groups' = $MailSecurityCount
 	'Security Groups' = $SecurityCount
@@ -741,7 +737,7 @@ $obj1 = [PSCustomObject]@{
 $TOPGroupsTable.Add($obj1)
 
 $obj1 = [PSCustomObject]@{
-	
+
 	'Name'  = 'Mail-Enabled Security Groups'
 	'Count' = $MailSecurityCount
 }
@@ -749,7 +745,7 @@ $obj1 = [PSCustomObject]@{
 $GroupTypetable.Add($obj1)
 
 $obj1 = [PSCustomObject]@{
-	
+
 	'Name'  = 'Security Groups'
 	'Count' = $SecurityCount
 }
@@ -758,7 +754,7 @@ $GroupTypetable.Add($obj1)
 $DistroCount = ($Groups | Where-Object { $_.GroupCategory -eq "Distribution" }).Count
 
 $obj1 = [PSCustomObject]@{
-	
+
 	'Name'  = 'Distribution Groups'
 	'Count' = $DistroCount
 }
@@ -767,7 +763,7 @@ $GroupTypetable.Add($obj1)
 
 #Default Group Pie Chart
 $obj1 = [PSCustomObject]@{
-	
+
 	'Name'  = 'Default Groups'
 	'Count' = $DefaultGroup
 }
@@ -775,7 +771,7 @@ $obj1 = [PSCustomObject]@{
 $DefaultGrouptable.Add($obj1)
 
 $obj1 = [PSCustomObject]@{
-	
+
 	'Name'  = 'Custom Groups'
 	'Count' = $CustomGroup
 }
@@ -784,7 +780,7 @@ $DefaultGrouptable.Add($obj1)
 
 #Group Protection Pie Chart
 $obj1 = [PSCustomObject]@{
-	
+
 	'Name'  = 'Protected'
 	'Count' = $GroupsProtected
 }
@@ -792,7 +788,7 @@ $obj1 = [PSCustomObject]@{
 $GroupProtectionTable.Add($obj1)
 
 $obj1 = [PSCustomObject]@{
-	
+
 	'Name'  = 'Not Protected'
 	'Count' = $GroupsNotProtected
 }
@@ -801,7 +797,7 @@ $GroupProtectionTable.Add($obj1)
 
 #Groups with membership vs no membership pie chart
 $objmem = [PSCustomObject]@{
-	
+
 	'Name'  = 'With Members'
 	'Count' = $Groupswithmemebrship
 }
@@ -809,7 +805,7 @@ $objmem = [PSCustomObject]@{
 $GroupMembershipTable.Add($objmem)
 
 $objmem = [PSCustomObject]@{
-	
+
 	'Name'  = 'No Members'
 	'Count' = $Groupswithnomembership
 }
@@ -833,60 +829,60 @@ $OUNotProtected = 0
 
 foreach ($OU in $OUs)
 {
-	
+
 	$LinkedGPOs = New-Object 'System.Collections.Generic.List[System.Object]'
-	
+
 	if (($OU.linkedgrouppolicyobjects).length -lt 1)
 	{
-		
+
 		$LinkedGPOs = "None"
 		$OUwithnoLink++
 	}
-	
+
 	else
 	{
-		
+
 		$OUwithLinked++
 		$GPOslinks = $OU.linkedgrouppolicyobjects
-		
+
 		foreach ($GPOlink in $GPOslinks)
 		{
-			
+
 			$Split1 = $GPOlink -split "{" | Select-Object -Last 1
 			$Split2 = $Split1 -split "}" | Select-Object -First 1
 			$LinkedGPOs.Add((Get-GPO -Guid $Split2 -ErrorAction SilentlyContinue).DisplayName)
 		}
 	}
-	
+
 	if ($OU.ProtectedFromAccidentalDeletion -eq $True)
 	{
-		
+
 		$OUProtected++
 	}
-	
+
 	else
 	{
-		
+
 		$OUNotProtected++
 	}
-	
+
 	$LinkedGPOs = $LinkedGPOs -join ", "
 	$obj = [PSCustomObject]@{
-		
+
 		'Name' = $OU.Name
 		'Linked GPOs' = $LinkedGPOs
 		'Modified Date' = $OU.WhenChanged
 		'Protected from Deletion' = $OU.ProtectedFromAccidentalDeletion
 	}
-	
+
 	$OUTable.Add($obj)
 }
 
 if (($OUTable).Count -eq 0)
 {
-	
+
 	$Obj = [PSCustomObject]@{
-		
+
 		Information = 'Information: No OUs were found'
 	}
 	$OUTable.Add($obj)
@@ -894,7 +890,7 @@ if (($OUTable).Count -eq 0)
 
 #OUs with no GPO Linked
 $obj1 = [PSCustomObject]@{
-	
+
 	'Name'  = "OUs with no GPO's linked"
 	'Count' = $OUwithnoLink
 }
@@ -902,7 +898,7 @@ $obj1 = [PSCustomObject]@{
 $OUGPOTable.Add($obj1)
 
 $obj2 = [PSCustomObject]@{
-	
+
 	'Name'  = "OUs with GPO's linked"
 	'Count' = $OUwithLinked
 }
@@ -911,7 +907,7 @@ $OUGPOTable.Add($obj2)
 
 #OUs Protected Pie Chart
 $obj1 = [PSCustomObject]@{
-	
+
 	'Name'  = "Protected"
 	'Count' = $OUProtected
 }
@@ -919,7 +915,7 @@ $obj1 = [PSCustomObject]@{
 $OUProtectionTable.Add($obj1)
 
 $obj2 = [PSCustomObject]@{
-	
+
 	'Name'  = "Not Protected"
 	'Count' = $OUNotProtected
 }
@@ -950,53 +946,53 @@ $AccountsExpiringSoon = 0
 $userphaventloggedonrecentlytable = New-Object 'System.Collections.Generic.List[System.Object]'
 foreach ($User in $AllUsers)
 {
-	
+
 	$AttVar = $User | Select-Object Enabled, PasswordExpired, PasswordLastSet, PasswordNeverExpires, PasswordNotRequired, Name, SamAccountName, EmailAddress, AccountExpirationDate, @{ Name = 'lastlogon'; Expression = { LastLogonConvert $_.lastlogon } }, DistinguishedName
 	$maxPasswordAge = (Get-ADDefaultDomainPasswordPolicy).MaxPasswordAge.Days
-	
+
 	if ((($AttVar.PasswordNeverExpires) -eq $False) -and (($AttVar.Enabled) -ne $false))
 	{
-		
+
 		#Get Password last set date
 		$passwordSetDate = ($User | ForEach-Object { $_.PasswordLastSet })
-		
+
 		if ($null -eq $passwordSetDate)
 		{
-			
+
 			$daystoexpire = "User has never logged on"
 		}
-		
+
 		else
 		{
-			
+
 			#Check for Fine Grained Passwords
 			$PasswordPol = (Get-ADUserResultantPasswordPolicy $user)
-			
+
 			if (($PasswordPol) -ne $null)
 			{
-				
+
 				$maxPasswordAge = ($PasswordPol).MaxPasswordAge
 			}
-			
+
 			$expireson = $passwordsetdate.AddDays($maxPasswordAge)
 			$today = (Get-Date)
-			
+
 			#Gets the count on how many days until the password expires and stores it in the $daystoexpire var
 			$daystoexpire = (New-TimeSpan -Start $today -End $Expireson).Days
 		}
 	}
-	
+
 	else
 	{
-		
+
 		$daystoexpire = "N/A"
 	}
-	
+
 	if (($User.Enabled -eq $True) -and ($AttVar.LastLogon -lt ((Get-Date).AddDays(- $Days))) -and ($User.LastLogon -ne $NULL))
 	{
-		
+
 		$obj = [PSCustomObject]@{
-			
+
 			'Name' = $User.Name
 			'UserPrincipalName' = $User.UserPrincipalName
 			'Enabled' = $AttVar.Enabled
@@ -1005,49 +1001,49 @@ foreach ($User in $AllUsers)
 			'Password Never Expires' = $AttVar.PasswordNeverExpires
 			'Days Until Password Expires' = $daystoexpire
 		}
-		
+
 		$userphaventloggedonrecentlytable.Add($obj)
 	}
-	
+
 	#Items for protected vs non protected users
 	if ($User.ProtectedFromAccidentalDeletion -eq $False)
 	{
-		
+
 		$NonProtectedUsers++
 	}
-	
+
 	else
 	{
-		
+
 		$ProtectedUsers++
 	}
-	
+
 	#Items for the enabled vs disabled users pie chart
 	if (($AttVar.PasswordNeverExpires) -ne $false)
 	{
-		
+
 		$UserPasswordNeverExpires++
 	}
-	
+
 	else
 	{
-		
+
 		$UserPasswordExpires++
 	}
-	
+
 	#Items for password expiration pie chart
 	if (($AttVar.Enabled) -ne $false)
 	{
-		
+
 		$UserEnabled++
 	}
-	
+
 	else
 	{
-		
+
 		$UserDisabled++
 	}
-	
+
 	$Name = $User.Name
 	$UPN = $User.UserPrincipalName
 	$Enabled = $AttVar.Enabled
@@ -1057,9 +1053,9 @@ foreach ($User in $AllUsers)
 	$PasswordLastSet = $AttVar.PasswordLastSet
 	$PasswordNeverExpires = $AttVar.PasswordNeverExpires
 	$daysUntilPWExpire = $daystoexpire
-	
+
 	$obj = [PSCustomObject]@{
-		
+
 		'Name'				      = $Name
 		'UserPrincipalName'	      = $UPN
 		'Enabled'				  = $Enabled
@@ -1072,33 +1068,33 @@ foreach ($User in $AllUsers)
 		'Password Never Expires'  = $PasswordNeverExpires
 		'Days Until Password Expires' = $daystoexpire
 	}
-	
+
 	$usertable.Add($obj)
-	
+
 	if ($daystoexpire -lt $DaysUntilPWExpireINT)
 	{
-		
+
 		$obj = [PSCustomObject]@{
-			
+
 			'Name'					      = $Name
 			'Days Until Password Expires' = $daystoexpire
 		}
-		
+
 		$PasswordExpireSoonTable.Add($obj)
 	}
 }
 if (($userphaventloggedonrecentlytable).Count -eq 0)
 {
 	$userphaventloggedonrecentlytable = [PSCustomObject]@{
-		
+
 		Information = "Information: No Users were found to have not logged on in $Days days or more"
 	}
 }
 if (($PasswordExpireSoonTable).Count -eq 0)
 {
-	
+
 	$Obj = [PSCustomObject]@{
-		
+
 		Information = 'Information: No users were found to have passwords expiring soon'
 	}
 	$PasswordExpireSoonTable.Add($obj)
@@ -1107,9 +1103,9 @@ if (($PasswordExpireSoonTable).Count -eq 0)
 
 if (($usertable).Count -eq 0)
 {
-	
+
 	$Obj = [PSCustomObject]@{
-		
+
 		Information = 'Information: No users were found'
 	}
 	$usertable.Add($obj)
@@ -1117,7 +1113,7 @@ if (($usertable).Count -eq 0)
 
 #Data for users enabled vs disabled pie graph
 $objULic = [PSCustomObject]@{
-	
+
 	'Name'  = 'Enabled'
 	'Count' = $UserEnabled
 }
@@ -1125,7 +1121,7 @@ $objULic = [PSCustomObject]@{
 $EnabledDisabledUsersTable.Add($objULic)
 
 $objULic = [PSCustomObject]@{
-	
+
 	'Name'  = 'Disabled'
 	'Count' = $UserDisabled
 }
@@ -1134,7 +1130,7 @@ $EnabledDisabledUsersTable.Add($objULic)
 
 #Data for users password expires pie graph
 $objULic = [PSCustomObject]@{
-	
+
 	'Name'  = 'Password Expires'
 	'Count' = $UserPasswordExpires
 }
@@ -1142,7 +1138,7 @@ $objULic = [PSCustomObject]@{
 $PasswordExpirationTable.Add($objULic)
 
 $objULic = [PSCustomObject]@{
-	
+
 	'Name'  = 'Password Never Expires'
 	'Count' = $UserPasswordNeverExpires
 }
@@ -1151,7 +1147,7 @@ $PasswordExpirationTable.Add($objULic)
 
 #Data for protected users pie graph
 $objULic = [PSCustomObject]@{
-	
+
 	'Name'  = 'Protected'
 	'Count' = $ProtectedUsers
 }
@@ -1159,7 +1155,7 @@ $objULic = [PSCustomObject]@{
 $ProtectedUsersTable.Add($objULic)
 
 $objULic = [PSCustomObject]@{
-	
+
 	'Name'  = 'Not Protected'
 	'Count' = $NonProtectedUsers
 }
@@ -1168,31 +1164,31 @@ $ProtectedUsersTable.Add($objULic)
 if ($null -ne (($userphaventloggedonrecentlytable).Information))
 {
 	$UHLONXD = "0"
-	
+
 }
 Else
 {
 	$UHLONXD = $userphaventloggedonrecentlytable.Count
-	
+
 }
 #TOP User table
 If ($null -eq (($ExpiringAccountsTable).Information))
 {
-	
+
 	$objULic = [PSCustomObject]@{
 		'Total Users' = $AllUsers.Count
 		"Users with Passwords Expiring in less than $DaysUntilPWExpireINT days" = $PasswordExpireSoonTable.Count
 		'Expiring Accounts' = $ExpiringAccountsTable.Count
 		"Users Haven't Logged on in $Days Days or more" = $UHLONXD
 	}
-	
+
 	$TOPUserTable.Add($objULic)
-	
-	
+
+
 }
 Else
 {
-	
+
 	$objULic = [PSCustomObject]@{
 		'Total Users' = $AllUsers.Count
 		"Users with Passwords Expiring in less than $DaysUntilPWExpireINT days" = $PasswordExpireSoonTable.Count
@@ -1212,23 +1208,23 @@ $GPOTable = New-Object 'System.Collections.Generic.List[System.Object]'
 
 foreach ($GPO in $GPOs)
 {
-	
+
 	$obj = [PSCustomObject]@{
-		
+
 		'Name' = $GPO.DisplayName
 		'Status' = $GPO.GpoStatus
 		'Modified Date' = $GPO.ModificationTime
 		'User Version' = $GPO.UserVersion
 		'Computer Version' = $GPO.ComputerVersion
 	}
-	
+
 	$GPOTable.Add($obj)
 }
 if (($GPOTable).Count -eq 0)
 {
-	
+
 	$Obj = [PSCustomObject]@{
-		
+
 		Information = 'Information: No Group Policy Obejects were found'
 	}
 	$GPOTable.Add($obj)
@@ -1247,7 +1243,7 @@ $ComputerDisabled = 0
 #Only search for versions of windows that exist in the Environment
 $WindowsRegex = "(Windows (Server )?(\d+|XP)?( R2)?).*"
 $OsVersions = $Computers | Select-Object OperatingSystem -unique | ForEach-Object {
-	if ($_.OperatingSystem -match $WindowsRegex ){ 
+	if ($_.OperatingSystem -match $WindowsRegex ){
 		return $matches[1]
 	} elseif ($_.OperatingSystem -ne $null) {
 		return $_.OperatingSystem
@@ -1264,33 +1260,33 @@ $OsVersions | ForEach-Object {
 
 foreach ($Computer in $Computers)
 {
-	
+
 	if ($Computer.ProtectedFromAccidentalDeletion -eq $True)
 	{
-		
+
 		$ComputersProtected++
 	}
-	
+
 	else
 	{
-		
+
 		$ComputersNotProtected++
 	}
-	
+
 	if ($Computer.Enabled -eq $True)
 	{
-		
+
 		$ComputerEnabled++
 	}
-	
+
 	else
 	{
-		
+
 		$ComputerDisabled++
 	}
-	
+
 	$obj = [PSCustomObject]@{
-		
+
 		'Name' = $Computer.Name
 		'Enabled' = $Computer.Enabled
 		'Operating System' = $Computer.OperatingSystem
@@ -1298,9 +1294,9 @@ foreach ($Computer in $Computers)
 		'Password Last Set' = $Computer.PasswordLastSet
 		'Protect from Deletion' = $Computer.ProtectedFromAccidentalDeletion
 	}
-	
+
 	$ComputersTable.Add($obj)
-	
+
 	if ($Computer.OperatingSystem -match $WindowsRegex)
 	{
 		$OsObj."$($matches[1])"++
@@ -1310,9 +1306,9 @@ foreach ($Computer in $Computers)
 
 if (($ComputersTable).Count -eq 0)
 {
-	
+
 	$Obj = [PSCustomObject]@{
-		
+
 		Information = 'Information: No computers were found'
 	}
 	$ComputersTable.Add($obj)
@@ -1331,7 +1327,7 @@ $TOPComputersTable.Add($OsObj)
 
 #Data for protected Computers pie graph
 $objULic = [PSCustomObject]@{
-	
+
 	'Name'  = 'Protected'
 	'Count' = $ComputerProtected
 }
@@ -1339,7 +1335,7 @@ $objULic = [PSCustomObject]@{
 $ComputerProtectedTable.Add($objULic)
 
 $objULic = [PSCustomObject]@{
-	
+
 	'Name'  = 'Not Protected'
 	'Count' = $ComputersNotProtected
 }
@@ -1348,7 +1344,7 @@ $ComputerProtectedTable.Add($objULic)
 
 #Data for enabled/vs Computers pie graph
 $objULic = [PSCustomObject]@{
-	
+
 	'Name'  = 'Enabled'
 	'Count' = $ComputerEnabled
 }
@@ -1356,7 +1352,7 @@ $objULic = [PSCustomObject]@{
 $ComputersEnabledTable.Add($objULic)
 
 $objULic = [PSCustomObject]@{
-	
+
 	'Name'  = 'Disabled'
 	'Count' = $ComputerDisabled
 }
@@ -1370,7 +1366,7 @@ $tabarray = @('Dashboard', 'Groups', 'Organizational Units', 'Users', 'Group Pol
 Write-Host "Compiling Report..." -ForegroundColor Green
 
 ##--OU Protection PIE CHART--##
-#Basic Properties 
+#Basic Properties
 $PO12 = Get-HTMLPieChartObject
 $PO12.Title = "Organizational Units Protected from Deletion"
 $PO12.Size.Height = 250
@@ -1380,13 +1376,13 @@ $PO12.ChartStyle.ChartType = 'doughnut'
 #These file exist in the module directoy, There are 4 schemes by default
 $PO12.ChartStyle.ColorSchemeName = "ColorScheme3"
 
-#There are 8 generated schemes, randomly generated at runtime 
+#There are 8 generated schemes, randomly generated at runtime
 $PO12.ChartStyle.ColorSchemeName = "Generated3"
 
 #you can also ask for a random scheme.  Which also happens ifyou have too many records for the scheme
 $PO12.ChartStyle.ColorSchemeName = 'Random'
 
-#Data defintion you can reference any column from name and value from the  dataset.  
+#Data defintion you can reference any column from name and value from the  dataset.
 #Name and Count are the default to work with the Group function.
 $PO12.DataDefinition.DataNameColumnName = 'Name'
 $PO12.DataDefinition.DataValueColumnName = 'Count'
@@ -1398,14 +1394,14 @@ $PieObjectComputerObjOS.Title = "Computer Operating Systems"
 #These file exist in the module directoy, There are 4 schemes by default
 $PieObjectComputerObjOS.ChartStyle.ColorSchemeName = "ColorScheme3"
 
-#There are 8 generated schemes, randomly generated at runtime 
+#There are 8 generated schemes, randomly generated at runtime
 $PieObjectComputerObjOS.ChartStyle.ColorSchemeName = "Generated3"
 
 #you can also ask for a random scheme.  Which also happens ifyou have too many records for the scheme
 $PieObjectComputerObjOS.ChartStyle.ColorSchemeName = 'Random'
 
 ##--Computers Protection PIE CHART--##
-#Basic Properties 
+#Basic Properties
 $PieObjectComputersProtected = Get-HTMLPieChartObject
 $PieObjectComputersProtected.Title = "Computers Protected from Deletion"
 $PieObjectComputersProtected.Size.Height = 250
@@ -1415,19 +1411,19 @@ $PieObjectComputersProtected.ChartStyle.ChartType = 'doughnut'
 #These file exist in the module directoy, There are 4 schemes by default
 $PieObjectComputersProtected.ChartStyle.ColorSchemeName = "ColorScheme3"
 
-#There are 8 generated schemes, randomly generated at runtime 
+#There are 8 generated schemes, randomly generated at runtime
 $PieObjectComputersProtected.ChartStyle.ColorSchemeName = "Generated3"
 
 #you can also ask for a random scheme.  Which also happens ifyou have too many records for the scheme
 $PieObjectComputersProtected.ChartStyle.ColorSchemeName = 'Random'
 
-#Data defintion you can reference any column from name and value from the  dataset.  
+#Data defintion you can reference any column from name and value from the  dataset.
 #Name and Count are the default to work with the Group function.
 $PieObjectComputersProtected.DataDefinition.DataNameColumnName = 'Name'
 $PieObjectComputersProtected.DataDefinition.DataValueColumnName = 'Count'
 
 ##--Computers Enabled PIE CHART--##
-#Basic Properties 
+#Basic Properties
 $PieObjectComputersEnabled = Get-HTMLPieChartObject
 $PieObjectComputersEnabled.Title = "Computers Enabled vs Disabled"
 $PieObjectComputersEnabled.Size.Height = 250
@@ -1437,19 +1433,19 @@ $PieObjectComputersEnabled.ChartStyle.ChartType = 'doughnut'
 #These file exist in the module directoy, There are 4 schemes by default
 $PieObjectComputersEnabled.ChartStyle.ColorSchemeName = "ColorScheme3"
 
-#There are 8 generated schemes, randomly generated at runtime 
+#There are 8 generated schemes, randomly generated at runtime
 $PieObjectComputersEnabled.ChartStyle.ColorSchemeName = "Generated3"
 
 #you can also ask for a random scheme.  Which also happens ifyou have too many records for the scheme
 $PieObjectComputersEnabled.ChartStyle.ColorSchemeName = 'Random'
 
-#Data defintion you can reference any column from name and value from the  dataset.  
+#Data defintion you can reference any column from name and value from the  dataset.
 #Name and Count are the default to work with the Group function.
 $PieObjectComputersEnabled.DataDefinition.DataNameColumnName = 'Name'
 $PieObjectComputersEnabled.DataDefinition.DataValueColumnName = 'Count'
 
 ##--USERS Protection PIE CHART--##
-#Basic Properties 
+#Basic Properties
 $PieObjectProtectedUsers = Get-HTMLPieChartObject
 $PieObjectProtectedUsers.Title = "Users Protected from Deletion"
 $PieObjectProtectedUsers.Size.Height = 250
@@ -1459,18 +1455,18 @@ $PieObjectProtectedUsers.ChartStyle.ChartType = 'doughnut'
 #These file exist in the module directoy, There are 4 schemes by default
 $PieObjectProtectedUsers.ChartStyle.ColorSchemeName = "ColorScheme3"
 
-#There are 8 generated schemes, randomly generated at runtime 
+#There are 8 generated schemes, randomly generated at runtime
 $PieObjectProtectedUsers.ChartStyle.ColorSchemeName = "Generated3"
 
 #you can also ask for a random scheme.  Which also happens ifyou have too many records for the scheme
 $PieObjectProtectedUsers.ChartStyle.ColorSchemeName = 'Random'
 
-#Data defintion you can reference any column from name and value from the  dataset.  
+#Data defintion you can reference any column from name and value from the  dataset.
 #Name and Count are the default to work with the Group function.
 $PieObjectProtectedUsers.DataDefinition.DataNameColumnName = 'Name'
 $PieObjectProtectedUsers.DataDefinition.DataValueColumnName = 'Count'
 
-#Basic Properties 
+#Basic Properties
 $PieObjectOUGPOLinks = Get-HTMLPieChartObject
 $PieObjectOUGPOLinks.Title = "OU GPO Links"
 $PieObjectOUGPOLinks.Size.Height = 250
@@ -1480,18 +1476,18 @@ $PieObjectOUGPOLinks.ChartStyle.ChartType = 'doughnut'
 #These file exist in the module directoy, There are 4 schemes by default
 $PieObjectOUGPOLinks.ChartStyle.ColorSchemeName = "ColorScheme4"
 
-#There are 8 generated schemes, randomly generated at runtime 
+#There are 8 generated schemes, randomly generated at runtime
 $PieObjectOUGPOLinks.ChartStyle.ColorSchemeName = "Generated5"
 
 #you can also ask for a random scheme.  Which also happens ifyou have too many records for the scheme
 $PieObjectOUGPOLinks.ChartStyle.ColorSchemeName = 'Random'
 
-#Data defintion you can reference any column from name and value from the  dataset.  
+#Data defintion you can reference any column from name and value from the  dataset.
 #Name and Count are the default to work with the Group function.
 $PieObjectOUGPOLinks.DataDefinition.DataNameColumnName = 'Name'
 $PieObjectOUGPOLinks.DataDefinition.DataValueColumnName = 'Count'
 
-#Basic Properties 
+#Basic Properties
 $PieObject4 = Get-HTMLPieChartObject
 $PieObject4.Title = "Office 365 Unassigned Licenses"
 $PieObject4.Size.Height = 250
@@ -1501,18 +1497,18 @@ $PieObject4.ChartStyle.ChartType = 'doughnut'
 #These file exist in the module directoy, There are 4 schemes by default
 $PieObject4.ChartStyle.ColorSchemeName = "ColorScheme4"
 
-#There are 8 generated schemes, randomly generated at runtime 
+#There are 8 generated schemes, randomly generated at runtime
 $PieObject4.ChartStyle.ColorSchemeName = "Generated4"
 
 #you can also ask for a random scheme.  Which also happens ifyou have too many records for the scheme
 $PieObject4.ChartStyle.ColorSchemeName = 'Random'
 
-#Data defintion you can reference any column from name and value from the  dataset.  
+#Data defintion you can reference any column from name and value from the  dataset.
 #Name and Count are the default to work with the Group function.
 $PieObject4.DataDefinition.DataNameColumnName = 'Name'
 $PieObject4.DataDefinition.DataValueColumnName = 'Unassigned Licenses'
 
-#Basic Properties 
+#Basic Properties
 $PieObjectGroupType = Get-HTMLPieChartObject
 $PieObjectGroupType.Title = "Group Types"
 $PieObjectGroupType.Size.Height = 250
@@ -1531,7 +1527,7 @@ $PieObjectGroupMembersType.ChartStyle.ColorSchemeName = 'Random'
 $PieObjectGroupMembersType.DataDefinition.DataNameColumnName = 'Name'
 $PieObjectGroupMembersType.DataDefinition.DataValueColumnName = 'Count'
 
-#Basic Properties 
+#Basic Properties
 $PieObjectGroupType2 = Get-HTMLPieChartObject
 $PieObjectGroupType2.Title = "Custom vs Default Groups"
 $PieObjectGroupType2.Size.Height = 250
@@ -1541,19 +1537,19 @@ $PieObjectGroupType2.ChartStyle.ChartType = 'doughnut'
 #These file exist in the module directoy, There are 4 schemes by default
 $PieObjectGroupType.ChartStyle.ColorSchemeName = "ColorScheme4"
 
-#There are 8 generated schemes, randomly generated at runtime 
+#There are 8 generated schemes, randomly generated at runtime
 $PieObjectGroupType.ChartStyle.ColorSchemeName = "Generated8"
 
 #you can also ask for a random scheme.  Which also happens ifyou have too many records for the scheme
 $PieObjectGroupType.ChartStyle.ColorSchemeName = 'Random'
 
-#Data defintion you can reference any column from name and value from the  dataset.  
+#Data defintion you can reference any column from name and value from the  dataset.
 #Name and Count are the default to work with the Group function.
 $PieObjectGroupType.DataDefinition.DataNameColumnName = 'Name'
 $PieObjectGroupType.DataDefinition.DataValueColumnName = 'Count'
 
 ##--Enabled users vs Disabled Users PIE CHART--##
-#Basic Properties 
+#Basic Properties
 $EnabledDisabledUsersPieObject = Get-HTMLPieChartObject
 $EnabledDisabledUsersPieObject.Title = "Enabled vs Disabled Users"
 $EnabledDisabledUsersPieObject.Size.Height = 250
@@ -1563,19 +1559,19 @@ $EnabledDisabledUsersPieObject.ChartStyle.ChartType = 'doughnut'
 #These file exist in the module directoy, There are 4 schemes by default
 $EnabledDisabledUsersPieObject.ChartStyle.ColorSchemeName = "ColorScheme3"
 
-#There are 8 generated schemes, randomly generated at runtime 
+#There are 8 generated schemes, randomly generated at runtime
 $EnabledDisabledUsersPieObject.ChartStyle.ColorSchemeName = "Generated3"
 
 #you can also ask for a random scheme.  Which also happens ifyou have too many records for the scheme
 $EnabledDisabledUsersPieObject.ChartStyle.ColorSchemeName = 'Random'
 
-#Data defintion you can reference any column from name and value from the  dataset.  
+#Data defintion you can reference any column from name and value from the  dataset.
 #Name and Count are the default to work with the Group function.
 $EnabledDisabledUsersPieObject.DataDefinition.DataNameColumnName = 'Name'
 $EnabledDisabledUsersPieObject.DataDefinition.DataValueColumnName = 'Count'
 
 ##--PasswordNeverExpires PIE CHART--##
-#Basic Properties 
+#Basic Properties
 $PWExpiresUsersTable = Get-HTMLPieChartObject
 $PWExpiresUsersTable.Title = "Password Expiration"
 $PWExpiresUsersTable.Size.Height = 250
@@ -1585,19 +1581,19 @@ $PWExpiresUsersTable.ChartStyle.ChartType = 'doughnut'
 #These file exist in the module directoy, There are 4 schemes by default
 $PWExpiresUsersTable.ChartStyle.ColorSchemeName = "ColorScheme3"
 
-#There are 8 generated schemes, randomly generated at runtime 
+#There are 8 generated schemes, randomly generated at runtime
 $PWExpiresUsersTable.ChartStyle.ColorSchemeName = "Generated3"
 
 #you can also ask for a random scheme.  Which also happens ifyou have too many records for the scheme
 $PWExpiresUsersTable.ChartStyle.ColorSchemeName = 'Random'
 
-#Data defintion you can reference any column from name and value from the  dataset.  
+#Data defintion you can reference any column from name and value from the  dataset.
 #Name and Count are the default to work with the Group function.
 $PWExpiresUsersTable.DataDefinition.DataNameColumnName = 'Name'
 $PWExpiresUsersTable.DataDefinition.DataValueColumnName = 'Count'
 
 ##--Group Protection PIE CHART--##
-#Basic Properties 
+#Basic Properties
 $PieObjectGroupProtection = Get-HTMLPieChartObject
 $PieObjectGroupProtection.Title = "Groups Protected from Deletion"
 $PieObjectGroupProtection.Size.Height = 250
@@ -1607,13 +1603,13 @@ $PieObjectGroupProtection.ChartStyle.ChartType = 'doughnut'
 #These file exist in the module directoy, There are 4 schemes by default
 $PieObjectGroupProtection.ChartStyle.ColorSchemeName = "ColorScheme3"
 
-#There are 8 generated schemes, randomly generated at runtime 
+#There are 8 generated schemes, randomly generated at runtime
 $PieObjectGroupProtection.ChartStyle.ColorSchemeName = "Generated3"
 
 #you can also ask for a random scheme.  Which also happens ifyou have too many records for the scheme
 $PieObjectGroupProtection.ChartStyle.ColorSchemeName = 'Random'
 
-#Data defintion you can reference any column from name and value from the  dataset.  
+#Data defintion you can reference any column from name and value from the  dataset.
 #Name and Count are the default to work with the Group function.
 $PieObjectGroupProtection.DataDefinition.DataNameColumnName = 'Name'
 $PieObjectGroupProtection.DataDefinition.DataValueColumnName = 'Count'
