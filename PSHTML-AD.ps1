@@ -290,7 +290,7 @@ foreach ($ADObj in $ADObjs)
 if (($ADObjectTable).Count -eq 0)
 {
 	$Obj = [PSCustomObject]@{
-		Information = 'Information: No AD Objects have been modified recently'
+		Information = 'Information: No AD objects have been modified recently'
 	}
 
 	$ADObjectTable.Add($obj)
@@ -384,7 +384,7 @@ foreach ($DomainAdminMember in $DomainAdminMembers)
 if (($DomainAdminTable).Count -eq 0)
 {
 	$Obj = [PSCustomObject]@{
-		Information = 'Information: No Domain Admin Members were found'
+		Information = 'Information: No Domain Admin members were found'
 	}
 
 	$DomainAdminTable.Add($obj)
@@ -437,7 +437,7 @@ foreach ($DefaultComputer in $DefaultComputers)
 if (($DefaultComputersinDefaultOUTable).Count -eq 0)
 {
 	$Obj = [PSCustomObject]@{
-		Information = 'Information: No computers were found in the Default OU'
+		Information = 'Information: No computers were found in the default OU'
 	}
 
 	$DefaultComputersinDefaultOUTable.Add($obj)
@@ -462,7 +462,7 @@ foreach ($DefaultUser in $DefaultUsers)
 if (($DefaultUsersinDefaultOUTable).Count -eq 0)
 {
 	$Obj = [PSCustomObject]@{
-		Information = 'Information: No Users were found in the default OU'
+		Information = 'Information: No users were found in the default OU'
 	}
 
 	$DefaultUsersinDefaultOUTable.Add($obj)
@@ -492,14 +492,14 @@ foreach ($LooseUser in $LooseUsers)
 if (($ExpiringAccountsTable).Count -eq 0)
 {
 	$Obj = [PSCustomObject]@{
-		Information = 'Information: No Users were found to expire soon'
+		Information = 'Information: No users were found to expire soon'
 	}
 
 	$ExpiringAccountsTable.Add($obj)
 }
 
 #Security Logs
-$SecurityLogs = Get-EventLog -Newest 7 -LogName "Security" | Where-Object { $_.Message -like "*An account*" }
+$SecurityLogs = Get-EventLog -Newest 7 -LogName "Security" | Where-Object { $_.Message -like "*An account*" } -ErrorAction SilentlyContinue
 
 foreach ($SecurityLog in $SecurityLogs)
 {
@@ -526,8 +526,7 @@ if (($SecurityEventTable).Count -eq 0)
 }
 
 #Tenant Domain
-$Domains = Get-ADForest | Select-Object -ExpandProperty upnsuffixes | ForEach-Object
-{
+$Domains = Get-ADForest | Select-Object -ExpandProperty upnsuffixes | ForEach-Object {
 	$obj = [PSCustomObject]@{
 		'UPN Suffixes' = $_
 		Valid		   = "True"
@@ -538,7 +537,7 @@ $Domains = Get-ADForest | Select-Object -ExpandProperty upnsuffixes | ForEach-Ob
 if (($DomainTable).Count -eq 0)
 {
 	$Obj = [PSCustomObject]@{
-		Information = 'Information: No UPN Suffixes were found'
+		Information = 'Information: No UPN suffixes were found'
 	}
 
 	$DomainTable.Add($obj)
@@ -650,7 +649,7 @@ foreach ($Group in $Groups)
 if (($table).Count -eq 0)
 {
 	$Obj = [PSCustomObject]@{
-		Information = 'Information: No Groups were found'
+		Information = 'Information: No groups were found'
 	}
 	$table.Add($obj)
 }
@@ -868,7 +867,7 @@ foreach ($User in $AllUsers)
 		else
 		{
 			#Check for Fine Grained Passwords
-			$PasswordPol = (Get-ADUserResultantPasswordPolicy $user)
+			$PasswordPol = (Get-ADUserResultantPasswordPolicy $user -ErrorAction SilentlyContinue)
 
 			if (($PasswordPol) -ne $null)
 			{
@@ -982,7 +981,7 @@ foreach ($User in $AllUsers)
 if (($UsersNotLoggedOnRecentlyTable).Count -eq 0)
 {
 	$UsersNotLoggedOnRecentlyTable = [PSCustomObject]@{
-		Information = "Information: No Users were found to have not logged on in $Days days or more"
+		Information = "Information: No users were found to have not logged on in $Days days or more"
 	}
 }
 
@@ -1099,7 +1098,7 @@ foreach ($GPO in $GPOs)
 if (($GPOTable).Count -eq 0)
 {
 	$Obj = [PSCustomObject]@{
-		Information = 'Information: No Group Policy Obejects were found'
+		Information = 'Information: No GPOs were found'
 	}
 
 	$GPOTable.Add($obj)
@@ -1119,8 +1118,7 @@ $ComputerEnabled = 0
 $ComputerDisabled = 0
 #Only search for versions of windows that exist in the Environment
 $WindowsRegex = "(Windows (Server )?(\d+|XP)?( R2)?).*"
-$OsVersions = $Computers | Select-Object OperatingSystem -unique | ForEach-Object
-{
+$OsVersions = $Computers | Select-Object OperatingSystem -unique | ForEach-Object {
 	if ($_.OperatingSystem -match $WindowsRegex )
 	{
 		return $matches[1]
@@ -1133,8 +1131,7 @@ $OsVersions = $Computers | Select-Object OperatingSystem -unique | ForEach-Objec
 
 $OsObj = [PSCustomObject]@{}
 
-$OsVersions | ForEach-Object
-{
+$OsVersions | ForEach-Object {
 	$OsObj | Add-Member -Name $_ -Value 0 -Type NoteProperty
 }
 
@@ -1484,7 +1481,7 @@ $PieObjectGroupProtection.DataDefinition.DataValueColumnName = 'Count'
 $FinalReport = New-Object 'System.Collections.Generic.List[System.Object]'
 $FinalReport.Add($(Get-HTMLOpenPage -TitleText $ReportTitle -LeftLogoString $CompanyLogo -RightLogoString $RightLogo))
 $FinalReport.Add($(Get-HTMLTabHeader -TabNames $tabarray))
-$FinalReport.Add($(Get-HTMLTabContentopen -TabName $tabarray[0] -TabHeading ("Report: " + (Get-Date -Format MM-dd-yyyy))))
+$FinalReport.Add($(Get-HTMLTabContentopen -TabName $tabarray[0] -TabHeading ("Report: " + (Get-Date -Format yyyy-MM-dd))))
 $FinalReport.Add($(Get-HTMLContentOpen -HeaderText "Company Information"))
 $FinalReport.Add($(Get-HTMLContentTable $CompanyInfoTable))
 $FinalReport.Add($(Get-HTMLContentClose))
@@ -1616,16 +1613,12 @@ $FinalReport.Add($(Get-HTMLContentTable $TOPUserTable -HideFooter))
 $FinalReport.Add($(Get-HTMLContentClose))
 
 $FinalReport.Add($(Get-HTMLContentOpen -HeaderText "Active Directory Users"))
-$FinalReport.Add($(Get-HTMLColumn1of2))
 $FinalReport.Add($(Get-HTMLContentOpen -BackgroundShade 1 -HeaderText "Enabled Users"))
 $FinalReport.Add($(Get-HTMLContentDataTable $UserTable -HideFooter))
 $FinalReport.Add($(Get-HTMLContentClose))
-$FinalReport.Add($(Get-HTMLColumnClose))
-$FinalReport.Add($(Get-HTMLColumn2of2))
 $FinalReport.Add($(Get-HTMLContentOpen -HeaderText 'Disabled Users'))
 $FinalReport.Add($(Get-HTMLContentDataTable $UserTableDisabled -HideFooter))
 $FinalReport.Add($(Get-HTMLContentClose))
-$FinalReport.Add($(Get-HTMLColumnClose))
 $FinalReport.Add($(Get-HTMLContentClose))
 
 $FinalReport.Add($(Get-HTMLContentOpen -HeaderText "Expiring Items"))
